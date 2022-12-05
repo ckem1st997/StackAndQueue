@@ -217,8 +217,6 @@ namespace StackAndQueue.QueueService
                         StackModel? workItem = await _taskQueue.Dequeue(stoppingToken);
                         if (workItem?.Id is not null && workItem.Id > IdBefore)
                             IdBefore = workItem.Id;
-                        // Console.WriteLine("Queue : " + workItem.Name);
-                        // Console.WriteLine(workItem?.Id);
                         Console.WriteLine(IdBefore);
                     }
                     else
