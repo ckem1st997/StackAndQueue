@@ -77,7 +77,7 @@ namespace StackAndQueue.QueueService
             try
             {
                 _queue.Push(workItem);
-              //  await Task.Delay(TimeSpan.FromMilliseconds(10), cancellationToken);
+                //  await Task.Delay(TimeSpan.FromMilliseconds(10), cancellationToken);
                 await Task.CompletedTask;
             }
             catch (Exception e)
@@ -156,7 +156,7 @@ namespace StackAndQueue.QueueService
                     if (workItem?.Id is not null && workItem.Id > IdBefore)
                         IdBefore = workItem.Id;
                     // Console.WriteLine("Queue : " + workItem.Name);
-                  //  Console.WriteLine(workItem?.Id);
+                    //  Console.WriteLine(workItem?.Id);
                     Console.WriteLine(IdBefore);
 
                 }
@@ -218,11 +218,11 @@ namespace StackAndQueue.QueueService
                         if (workItem?.Id is not null && workItem.Id > IdBefore)
                             IdBefore = workItem.Id;
                         // Console.WriteLine("Queue : " + workItem.Name);
-                       // Console.WriteLine(workItem?.Id);
+                        // Console.WriteLine(workItem?.Id);
                         Console.WriteLine(IdBefore);
                     }
                     else
-                        Console.WriteLine("max: "+IdBefore);
+                        Console.WriteLine("max: " + IdBefore);
 
                     // này sẽ delay
                     //  await Task.Delay(TimeSpan.FromMilliseconds(10), stoppingToken);
