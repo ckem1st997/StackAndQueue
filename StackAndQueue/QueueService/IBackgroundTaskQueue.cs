@@ -11,12 +11,14 @@ namespace StackAndQueue.QueueService
         ValueTask<T> DequeueAsync(CancellationToken cancellationToken);
     }
 
-    public interface IBackgroundTaskStack<T> where T : BaseModel
+    public interface IBackgroundTaskStack<T>
     {
         Task StackBackgroundWorkItem(T workItem, CancellationToken cancellationToken = default);
 
         Task<T> Dequeue(CancellationToken cancellationToken);
         Task<bool> CheckStack();
+        Task<int> COUNT();
+
     }
 
 
@@ -53,7 +55,7 @@ namespace StackAndQueue.QueueService
     }
 
 
-    public sealed class DefaultBackgroundTaskStack<T> : IBackgroundTaskStack<T> where T : BaseModel
+    public sealed class DefaultBackgroundTaskStack<T> : IBackgroundTaskStack<T>
     {
         private readonly Stack<T> _queue;
 
@@ -74,17 +76,14 @@ namespace StackAndQueue.QueueService
             }
             try
             {
-                while (_queue.FirstOrDefault(x => x.Equals(workItem)) is null)
-                    _queue.Push(workItem);
-
+                _queue.Push(workItem);
+              //  await Task.Delay(TimeSpan.FromMilliseconds(10), cancellationToken);
                 await Task.CompletedTask;
             }
             catch (Exception e)
             {
                 await Task.FromException(e);
             }
-            //_queue.Push(workItem);
-            //await Task.CompletedTask;
         }
 
         public async Task<T> Dequeue(CancellationToken cancellationToken)
@@ -96,8 +95,6 @@ namespace StackAndQueue.QueueService
 
             try
             {
-                //T? workItem = _queue.Pop();
-                //return await Task.FromResult(workItem);
                 if (_queue.TryPop(out T? fastItem))
                 {
                     return await Task.FromResult(fastItem);
@@ -116,7 +113,14 @@ namespace StackAndQueue.QueueService
         {
             //  await Task.Delay(1, cancellationToken);
             return await Task.FromResult(_queue.Count > 0);
+
         }
+        public async Task<int> COUNT()
+        {
+            //  await Task.Delay(1, cancellationToken);
+            return await Task.FromResult(_queue.Count);
+        }
+
     }
 
 
@@ -124,6 +128,7 @@ namespace StackAndQueue.QueueService
     {
         private readonly IBackgroundTaskQueue<QueueModel> _taskQueue;
         private readonly ILogger<QueueHostedService> _logger;
+        private int IdBefore;
 
         public QueueHostedService(
             IBackgroundTaskQueue<QueueModel> taskQueue,
@@ -148,8 +153,11 @@ namespace StackAndQueue.QueueService
                 try
                 {
                     QueueModel? workItem = await _taskQueue.DequeueAsync(stoppingToken);
-
-                    Console.WriteLine("Queue : " + workItem.Name);
+                    if (workItem?.Id is not null && workItem.Id > IdBefore)
+                        IdBefore = workItem.Id;
+                    // Console.WriteLine("Queue : " + workItem.Name);
+                  //  Console.WriteLine(workItem?.Id);
+                    Console.WriteLine(IdBefore);
 
                 }
                 catch (OperationCanceledException)
@@ -178,6 +186,8 @@ namespace StackAndQueue.QueueService
     {
         private readonly IBackgroundTaskStack<StackModel> _taskQueue;
         private readonly ILogger<QueueHostedService> _logger;
+        private int IdBefore;
+        private int IdAfter;
 
         public StackHostedService(
             IBackgroundTaskStack<StackModel> taskQueue,
@@ -205,19 +215,23 @@ namespace StackAndQueue.QueueService
                     if (await _taskQueue.CheckStack())
                     {
                         StackModel? workItem = await _taskQueue.Dequeue(stoppingToken);
-                        if (workItem is not null)
-                            Console.WriteLine("Stack : " + workItem.Name);
-                        else
-                            Console.WriteLine("Null : ");
-
+                        if (workItem?.Id is not null && workItem.Id > IdBefore)
+                            IdBefore = workItem.Id;
+                        // Console.WriteLine("Queue : " + workItem.Name);
+                       // Console.WriteLine(workItem?.Id);
+                        Console.WriteLine(IdBefore);
                     }
+                    else
+                        Console.WriteLine("max: "+IdBefore);
+
                     // này sẽ delay
+                    //  await Task.Delay(TimeSpan.FromMilliseconds(10), stoppingToken);
                     await Task.Delay(TimeSpan.FromMilliseconds(delay), stoppingToken);
                     //await Task.CompletedTask;
                     if (delay > 0)
                     {
                         Console.WriteLine(delay);
-                        delay /= 10;
+                        delay /= 2;
 
                     }
 

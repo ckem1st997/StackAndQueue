@@ -26,9 +26,16 @@ namespace StackAndQueue.Controllers
         {
             for (int i = 0; i < index; i++)
             {
-             //   await _taskQueue.QueueBackgroundWorkItemAsync(new QueueModel(i));
-                await _taskStack.StackBackgroundWorkItem(new StackModel(i));
+              // await _taskQueue.QueueBackgroundWorkItemAsync(new QueueModel(new Random().Next(i,i+999)));
+                 await _taskStack.StackBackgroundWorkItem(new StackModel(new Random().Next(i, i + 999)));
             }
+            //await Task.Delay(TimeSpan.FromMilliseconds(1));
+
+            //for (int i = 0; i < index; i++)
+            //{
+            //  // await _taskQueue.QueueBackgroundWorkItemAsync(new QueueModel(new Random().Next(i,i+999)));
+            //     await _taskStack.StackBackgroundWorkItem(new StackModel(new Random().Next(i, i + 999)));
+            //}
             return Ok();
         }
     }
