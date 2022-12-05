@@ -1,4 +1,5 @@
 ﻿using StackAndQueue.Model;
+using System.Threading;
 using System.Threading.Channels;
 
 namespace StackAndQueue.QueueService
@@ -10,12 +11,12 @@ namespace StackAndQueue.QueueService
         ValueTask<T> DequeueAsync(CancellationToken cancellationToken);
     }
 
-    public interface IBackgroundTaskStack<T>
+    public interface IBackgroundTaskStack<T> where T : BaseModel
     {
-        Task StackBackgroundWorkItem(T workItem);
+        Task StackBackgroundWorkItem(T workItem, CancellationToken cancellationToken = default);
 
         Task<T> Dequeue(CancellationToken cancellationToken);
-        Task<bool> CheckStack(CancellationToken cancellationToken);
+        Task<bool> CheckStack();
     }
 
 
@@ -52,36 +53,68 @@ namespace StackAndQueue.QueueService
     }
 
 
-    public sealed class DefaultBackgroundTaskStack<T> : IBackgroundTaskStack<T>
+    public sealed class DefaultBackgroundTaskStack<T> : IBackgroundTaskStack<T> where T : BaseModel
     {
         private readonly Stack<T> _queue;
 
         public DefaultBackgroundTaskStack()
         {
-            _queue = new Stack<T>(10000);
+            _queue = new Stack<T>();
         }
 
-        public async Task StackBackgroundWorkItem(T workItem)
+        public async Task StackBackgroundWorkItem(T workItem, CancellationToken cancellationToken = default)
         {
             if (workItem is null)
             {
                 throw new ArgumentNullException(nameof(workItem));
             }
+            if (cancellationToken.IsCancellationRequested)
+            {
+                await Task.FromCanceled<T>(cancellationToken);
+            }
+            try
+            {
+                while (_queue.FirstOrDefault(x => x.Equals(workItem)) is null)
+                    _queue.Push(workItem);
 
-            _queue.Push(workItem);
-            await Task.Delay(1);
-
+                await Task.CompletedTask;
+            }
+            catch (Exception e)
+            {
+                await Task.FromException(e);
+            }
+            //_queue.Push(workItem);
+            //await Task.CompletedTask;
         }
 
         public async Task<T> Dequeue(CancellationToken cancellationToken)
         {
-            T? workItem = _queue.Pop();
-            await Task.Delay(1, cancellationToken);
-            return await Task.FromResult(workItem);
+            if (cancellationToken.IsCancellationRequested)
+            {
+                return await Task.FromCanceled<T>(cancellationToken);
+            }
+
+            try
+            {
+                //T? workItem = _queue.Pop();
+                //return await Task.FromResult(workItem);
+                if (_queue.TryPop(out T? fastItem))
+                {
+                    return await Task.FromResult(fastItem);
+                }
+            }
+            catch (Exception exc) when (exc is OperationCanceledException)
+            {
+                return await Task.FromException<T>(exc);
+            }
+
+            return await Task.FromCanceled<T>(cancellationToken);
+
         }
 
-        public async Task<bool> CheckStack(CancellationToken cancellationToken)
+        public async Task<bool> CheckStack()
         {
+            //  await Task.Delay(1, cancellationToken);
             return await Task.FromResult(_queue.Count > 0);
         }
     }
@@ -117,6 +150,7 @@ namespace StackAndQueue.QueueService
                     QueueModel? workItem = await _taskQueue.DequeueAsync(stoppingToken);
 
                     Console.WriteLine("Queue : " + workItem.Name);
+
                 }
                 catch (OperationCanceledException)
                 {
@@ -163,19 +197,29 @@ namespace StackAndQueue.QueueService
         private async Task ProcessTaskQueueAsync(CancellationToken stoppingToken)
         {
             Console.WriteLine("////////// Stack ////////////");
+            int delay = 1;
             while (!stoppingToken.IsCancellationRequested)
             {
                 try
                 {
-                    if (await _taskQueue.CheckStack(stoppingToken))
+                    if (await _taskQueue.CheckStack())
                     {
                         StackModel? workItem = await _taskQueue.Dequeue(stoppingToken);
                         if (workItem is not null)
                             Console.WriteLine("Stack : " + workItem.Name);
+                        else
+                            Console.WriteLine("Null : ");
+
                     }
+                    // này sẽ delay
+                    await Task.Delay(TimeSpan.FromMilliseconds(delay), stoppingToken);
+                    //await Task.CompletedTask;
+                    if (delay > 0)
+                    {
+                        Console.WriteLine(delay);
+                        delay /= 10;
 
-                    await Task.Delay(1, stoppingToken);
-
+                    }
 
                 }
                 catch (OperationCanceledException)

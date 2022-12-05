@@ -26,7 +26,7 @@ namespace StackAndQueue.Controllers
         {
             for (int i = 0; i < index; i++)
             {
-                await _taskQueue.QueueBackgroundWorkItemAsync(new QueueModel(i));
+             //   await _taskQueue.QueueBackgroundWorkItemAsync(new QueueModel(i));
                 await _taskStack.StackBackgroundWorkItem(new StackModel(i));
             }
             return Ok();
