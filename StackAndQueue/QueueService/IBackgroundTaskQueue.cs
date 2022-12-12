@@ -137,7 +137,57 @@ namespace StackAndQueue.QueueService
             await base.StopAsync(stoppingToken);
         }
     }
+    public sealed class QueueHosteddService : BackgroundService
+    {
+        private readonly IBackgroundTaskQueue<Func<CancellationToken, ValueTask>> _taskQueue;
+        private readonly ILogger<QueueHostedService> _logger;
 
+        public QueueHosteddService(
+            IBackgroundTaskQueue<Func<CancellationToken, ValueTask>> taskQueue,
+            ILogger<QueueHostedService> logger) =>
+            (_taskQueue, _logger) = (taskQueue, logger);
+
+        protected override Task ExecuteAsync(CancellationToken stoppingToken)
+        {
+            _logger.LogInformation(
+                $"{nameof(QueueHostedService)} is running.{Environment.NewLine}" +
+                $"{Environment.NewLine}Tap W to add a work item to the " +
+                $"background queue.{Environment.NewLine}");
+
+            return ProcessTaskQueueAsync(stoppingToken);
+        }
+
+        private async Task ProcessTaskQueueAsync(CancellationToken stoppingToken)
+        {
+            Console.WriteLine("////////// Queue ////////////");
+            while (!stoppingToken.IsCancellationRequested)
+            {
+                try
+                {
+                    Func<CancellationToken, ValueTask>? workItem = await _taskQueue.DequeueAsync(stoppingToken);
+
+                    await workItem(stoppingToken);
+
+                }
+                catch (OperationCanceledException)
+                {
+                    // Prevent throwing if stoppingToken was signaled
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(ex, "Error occurred executing task work item.");
+                }
+            }
+        }
+
+        public override async Task StopAsync(CancellationToken stoppingToken)
+        {
+            _logger.LogInformation(
+                $"{nameof(QueueHosteddService)} is stopping.");
+
+            await base.StopAsync(stoppingToken);
+        }
+    }
 
 
     public sealed class StackHostedService : BackgroundService

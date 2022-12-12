@@ -10,8 +10,9 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddSingleton(typeof(IBackgroundTaskQueue<>), typeof(DefaultBackgroundTaskQueue<>));
 builder.Services.AddSingleton(typeof(IBackgroundTaskStack<>), typeof(DefaultBackgroundTaskStack<>));
-builder.Services.AddHostedService<QueueHostedService>();
-builder.Services.AddHostedService<StackHostedService>();
+//builder.Services.AddHostedService<QueueHostedService>();
+//builder.Services.AddHostedService<StackHostedService>();
+builder.Services.AddHostedService<QueueHosteddService>();
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
