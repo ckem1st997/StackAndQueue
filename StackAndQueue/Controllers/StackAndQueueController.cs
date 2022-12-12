@@ -9,17 +9,15 @@ namespace StackAndQueue.Controllers
     public class StackAndQueueController : Controller
     {
         private readonly IBackgroundTaskQueue<QueueModel> _taskQueue;
-        private readonly IBackgroundTaskQueue<Func<CancellationToken, ValueTask>> backgroundTaskQueue;
         private readonly IBackgroundTaskStack<StackModel> _taskStack;
         private readonly CancellationToken _cancellationToken;
 
 
-        public StackAndQueueController(IBackgroundTaskQueue<QueueModel> taskQueue, IHostApplicationLifetime applicationLifetime, IBackgroundTaskStack<StackModel> taskStack, IBackgroundTaskQueue<Func<CancellationToken, ValueTask>> backgroundTaskQueue)
+        public StackAndQueueController(IBackgroundTaskQueue<QueueModel> taskQueue, IHostApplicationLifetime applicationLifetime, IBackgroundTaskStack<StackModel> taskStack)
         {
             _taskQueue = taskQueue;
             _cancellationToken = applicationLifetime.ApplicationStopping;
             _taskStack = taskStack;
-            this.backgroundTaskQueue = backgroundTaskQueue;
         }
 
 
@@ -28,16 +26,17 @@ namespace StackAndQueue.Controllers
         {
             for (int i = 0; i < index; i++)
             {
-                await backgroundTaskQueue.QueueBackgroundWorkItemAsync(x => RunRegistrationCompanyMainAsync(i.ToString(), x));
-                //  await _taskStack.StackBackgroundWorkItem(new StackModel(i));
+              // await _taskQueue.QueueBackgroundWorkItemAsync(new QueueModel(new Random().Next(i,i+999)));
+                 await _taskStack.StackBackgroundWorkItem(new StackModel(new Random().Next(i, i + 999)));
             }
-            return Ok();
-        }
+            //await Task.Delay(TimeSpan.FromMilliseconds(1));
 
-        private async ValueTask RunRegistrationCompanyMainAsync(string tenantId, CancellationToken cancellationToken)
-        {
-            if (!cancellationToken.IsCancellationRequested)
-                await Task.Run(() => Console.WriteLine("Func<CancellationToken, ValueTask>: " + tenantId));
+            //for (int i = 0; i < index; i++)
+            //{
+            //  // await _taskQueue.QueueBackgroundWorkItemAsync(new QueueModel(new Random().Next(i,i+999)));
+            //     await _taskStack.StackBackgroundWorkItem(new StackModel(new Random().Next(i, i + 999)));
+            //}
+            return Ok();
         }
     }
 }
