@@ -9,15 +9,17 @@ namespace StackAndQueue.Controllers
     public class StackAndQueueController : Controller
     {
         private readonly IBackgroundTaskQueue<QueueModel> _taskQueue;
+        private readonly IBackgroundTaskQueue<Func<CancellationToken, ValueTask>> backgroundTaskQueue;
         private readonly IBackgroundTaskStack<StackModel> _taskStack;
         private readonly CancellationToken _cancellationToken;
 
 
-        public StackAndQueueController(IBackgroundTaskQueue<QueueModel> taskQueue, IHostApplicationLifetime applicationLifetime, IBackgroundTaskStack<StackModel> taskStack)
+        public StackAndQueueController(IBackgroundTaskQueue<QueueModel> taskQueue, IHostApplicationLifetime applicationLifetime, IBackgroundTaskStack<StackModel> taskStack, IBackgroundTaskQueue<Func<CancellationToken, ValueTask>> backgroundTaskQueue)
         {
             _taskQueue = taskQueue;
             _cancellationToken = applicationLifetime.ApplicationStopping;
             _taskStack = taskStack;
+            this.backgroundTaskQueue = backgroundTaskQueue;
         }
 
 
@@ -26,17 +28,37 @@ namespace StackAndQueue.Controllers
         {
             for (int i = 0; i < index; i++)
             {
-              // await _taskQueue.QueueBackgroundWorkItemAsync(new QueueModel(new Random().Next(i,i+999)));
-                 await _taskStack.StackBackgroundWorkItem(new StackModel(new Random().Next(i, i + 999)));
+                await backgroundTaskQueue.QueueBackgroundWorkItemAsync(x => RunRegistrationCompanyMainAsync(i.ToString(), x));
             }
-            //await Task.Delay(TimeSpan.FromMilliseconds(1));
-
-            //for (int i = 0; i < index; i++)
-            //{
-            //  // await _taskQueue.QueueBackgroundWorkItemAsync(new QueueModel(new Random().Next(i,i+999)));
-            //     await _taskStack.StackBackgroundWorkItem(new StackModel(new Random().Next(i, i + 999)));
-            //}
             return Ok();
+        }
+
+        private async ValueTask RunRegistrationCompanyMainAsync(string tenantId, CancellationToken cancellationToken)
+        {
+            if (!cancellationToken.IsCancellationRequested)
+                await Task.Run(() => Console.WriteLine("Func<CancellationToken, ValueTask>: " + tenantId));
         }
     }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
